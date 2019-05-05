@@ -68,7 +68,6 @@
 				elem[0].classList.add("active");
 				elem[1].classList.add("active");
 				result.forEach((data,key)=>{
-					console.log(((page  ) * limit) )
 					if(key > ((page * limit) - limit )  &&  key  <= (((page) * limit))) {
 						fetch(`https://hacker-news.firebaseio.com/v0/item/${data}.json?print=pretty`).then(async (res)=>{
 							res  = await res.json();
