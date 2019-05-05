@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8">
+		<title>Tester Hackenews api</title>
+		<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+	</head>
+	<body>
+		<div class="container pt-5">
+			<div class="w-100 row justify-content-center  clearfix">
+				<ul class="pagination pagination-sm" id="paginator_element_top">
+					
+				</ul>
+			</div>
+			<div class="row mb-3 " id="row_content">
+				
+			</div>
+			<div class="w-100 row justify-content-center mt-5 clearfix mb-5">
+				<ul class="pagination pagination-sm" id="paginator_element">
+					
+				</ul>
+			</div>
+		</div>
+		<template id="temp_ui">
+		<div class="col-md-6 col-12 mt-5">
+			<a href="{uri}" target="_black" class="text-dark" style="text-decoration: none;" >
+				<div class="card shadow">
+					<div class="card-body">
+						<h5 class="text-left">{title}...</h5>
+						<h6 class="text-left">By : {by}</h6>
+						<h6 class="text-left">Descendants : {decedants}</h6>
+						<h6 class="text-left">Time : {time}</h6>
+					</div>
+				</div>
+			</a>
+		</div>
+		</template>
+		<template id="paginator">
+		<li class="page-item page-{uri}">
+			<a class="page-link "  href="?page={uri}">{uri}</a>
+		</li>
+		</template>
+	</body>
+	<script>
+		const base_api  =  "https://hacker-news.firebaseio.com/v0/topstories.json?print=pretty";
+		const limit  =  20;
+		const getTIme  =  (time)=>{
+			var date =  new  Date(time * 1000);
+			var month  =  ['January','February','March','April','May','June','July','August','September','October','November','December'];
+			var day  = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+			return `${day[date.getDay()]}  ${date.getDate()} ${month[date.getMonth()]}  ${date.getFullYear()} : ${date.getHours()}:${date.getMinutes()}:${date.getSeconds()}`;
+		}
+		(async()=>{
+			const template  =  document.getElementById("temp_ui").innerHTML;
+			const paginator  =  document.getElementById("paginator").innerHTML;
+			const searchParams  =  new URLSearchParams(window.location.search);
+			fetch(base_api).then(async (result)=>{
+				result =  await result.json();
+				var declimiter  =  Math.ceil(result.length / limit);
+				let tmp_paginate  =  "";
+				for (var i = 0; i < declimiter; i++) {
+					tmp_paginate = tmp_paginate + paginator.split("{uri}").join(i+1);
+				}
+				await document.getElementById("paginator_element").insertAdjacentHTML("beforeend",tmp_paginate);
+				await document.getElementById("paginator_element_top").insertAdjacentHTML("beforeend",tmp_paginate);
+				const page  = searchParams.get("page") ? searchParams.get("page")  : 1;
+				var elem = document.querySelectorAll(`.page-${page}`);
+				elem[0].classList.add("active");
+				elem[1].classList.add("active");
+				result.forEach((data,key)=>{
+					console.log(((page  ) * limit) )
+					if(key > ((page * limit) - limit )  &&  key  <= (((page) * limit))) {
+						fetch(`https://hacker-news.firebaseio.com/v0/item/${data}.json?print=pretty`).then(async (res)=>{
+							res  = await res.json();
+							var tmp_data =  template.replace("{uri}",res["url"])
+													.replace("{title}",res["title"].substring(0,45) )
+													.replace("{by}",res["by"])
+													.replace("{type}",res["type"])
+													.replace("{decedants}",res["descendants"])
+													.replace("{time}",getTIme(res["time"]));
+							document.getElementById("row_content").insertAdjacentHTML("beforeend",tmp_data)
+						})
+					}
+				})
+			})
+		})()
+	</script>
+</html>
