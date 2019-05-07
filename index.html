@@ -77,7 +77,7 @@
 				})
 				setStorage(api,arr);
 			}		
-			return arr;
+			return arr[0];
 			
 		}
 		const base_api  =  "https://hacker-news.firebaseio.com/v0/topstories.json?print=pretty";
@@ -106,7 +106,6 @@
 					result.forEach((data,key)=>{
 						if(key >= ((page * limit) - limit )  &&  key  < (((page) * limit))) {
 							getApi(`https://hacker-news.firebaseio.com/v0/item/${data}.json?print=pretty`).then(async(res)=>{
-								res  =  res[0];
 								var tmp_data =  template.replace("{uri}",res["url"])
 														.replace("{title}",res["title"].substring(0,45) )
 														.replace("{by}",res["by"])
