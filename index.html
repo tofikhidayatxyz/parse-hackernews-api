@@ -37,51 +37,95 @@
 		</template>
 		<template id="paginator">
 		<li class="page-item page-{uri}">
-			<a class="page-link "  href="?page={uri}">{uri}</a>
+			<a class="page-link "  href="/#/define?page={uri}">{uri}</a>
 		</li>
 		</template>
 	</body>
 	<script>
-		const base_api  =  "https://hacker-news.firebaseio.com/v0/topstories.json?print=pretty";
+
 		const limit  =  20;
+		const template  =  document.getElementById("temp_ui").innerHTML;
+		const paginator  =  document.getElementById("paginator").innerHTML;
 		const getTIme  =  (time)=>{
 			var date =  new  Date(time * 1000);
 			var month  =  ['January','February','March','April','May','June','July','August','September','October','November','December'];
 			var day  = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 			return `${day[date.getDay()]}  ${date.getDate()} ${month[date.getMonth()]}  ${date.getFullYear()} : ${date.getHours()}:${date.getMinutes()}:${date.getSeconds()}`;
 		}
-		(async()=>{
-			const template  =  document.getElementById("temp_ui").innerHTML;
-			const paginator  =  document.getElementById("paginator").innerHTML;
-			const searchParams  =  new URLSearchParams(window.location.search);
-			fetch(base_api).then(async (result)=>{
-				result =  await result.json();
-				var declimiter  =  Math.ceil(result.length / limit);
-				let tmp_paginate  =  "";
-				for (var i = 0; i < declimiter; i++) {
-					tmp_paginate = tmp_paginate + paginator.split("{uri}").join(i+1);
+
+		if (localStorage.getItem("uri") == null )  localStorage.setItem("uri",JSON.stringify([{"name":"null","data":"test Localstorage"}]));
+		const getStorage = (name)=> {
+			var data  =  JSON.parse(localStorage.getItem("uri"));
+			for (var i = 0; i < data.length; i++) {
+				if (data[i]["name"] == name) {
+					return data[i]["data"];
 				}
-				await document.getElementById("paginator_element").insertAdjacentHTML("beforeend",tmp_paginate);
-				await document.getElementById("paginator_element_top").insertAdjacentHTML("beforeend",tmp_paginate);
-				const page  = searchParams.get("page") ? searchParams.get("page")  : 1;
-				var elem = document.querySelectorAll(`.page-${page}`);
-				elem[0].classList.add("active");
-				elem[1].classList.add("active");
-				result.forEach((data,key)=>{
-					if(key > ((page * limit) - limit )  &&  key  <= (((page) * limit))) {
-						fetch(`https://hacker-news.firebaseio.com/v0/item/${data}.json?print=pretty`).then(async (res)=>{
-							res  = await res.json();
-							var tmp_data =  template.replace("{uri}",res["url"])
-													.replace("{title}",res["title"].substring(0,45) )
-													.replace("{by}",res["by"])
-													.replace("{type}",res["type"])
-													.replace("{decedants}",res["descendants"])
-													.replace("{time}",getTIme(res["time"]));
-							document.getElementById("row_content").insertAdjacentHTML("beforeend",tmp_data)
-						})
-					}
+			}
+			return null;
+		}
+		const setStorage = (name,data)=> {
+			var ex = JSON.parse(localStorage.getItem("uri"));
+				ex.push({"name":name,"data":data});
+			localStorage.setItem("uri",JSON.stringify(ex));		
+		}
+		const getApi = async (api)=> {
+			var arr  = getStorage(api) != null ? getStorage(api) :  [];
+			if (arr.length == 0 ) {
+				await fetch(api).then( async(result)=>{
+					result =  await result.json();
+					await arr.push(result);
 				})
-			})
+				setStorage(api,arr);
+			}		
+			return arr;
+			
+		}
+		const base_api  =  "https://hacker-news.firebaseio.com/v0/topstories.json?print=pretty";
+		(async ()=>{
+			const createData  = ()=> {
+					const searchParams  =  new URLSearchParams(window.location.hash.split(window.location.hash.split("?"+window.location.hash.split("?").pop()).join("")).join(""));
+					document.getElementById("paginator_element").innerHTML = "";
+					document.getElementById("paginator_element_top").innerHTML = "";
+					document.getElementById("row_content").innerHTML = "";
+
+
+					getApi(base_api).then(async(result)=>{
+					var declimiter  =  Math.ceil(result.length / limit);
+					let tmp_paginate  =  "";
+					for (var i = 0; i < declimiter; i++) {
+						tmp_paginate = tmp_paginate + paginator.split("{uri}").join(i+1);
+					}
+					await document.getElementById("paginator_element").insertAdjacentHTML("beforeend",tmp_paginate);
+					await document.getElementById("paginator_element_top").insertAdjacentHTML("beforeend",tmp_paginate);
+					const page  = searchParams.get("page") ? searchParams.get("page")  : 1;
+					// Get page number
+					var elem = document.querySelectorAll(`.page-${page}`);
+					elem[0].classList.add("active");
+					elem[1].classList.add("active");
+					
+					result.forEach((data,key)=>{
+						if(key >= ((page * limit) - limit )  &&  key  < (((page) * limit))) {
+							getApi(`https://hacker-news.firebaseio.com/v0/item/${data}.json?print=pretty`).then(async(res)=>{
+								res  =  res[0];
+								var tmp_data =  template.replace("{uri}",res["url"])
+														.replace("{title}",res["title"].substring(0,45) )
+														.replace("{by}",res["by"])
+														.replace("{type}",res["type"])
+														.replace("{decedants}",res["descendants"])
+														.replace("{time}",getTIme(res["time"]));
+								document.getElementById("row_content").insertAdjacentHTML("beforeend",tmp_data)
+							})
+						}
+					})	
+				})
+
+			}
+			createData()
+			window.onpopstate =  (event)=>{
+				createData()
+			}
+
 		})()
+		
 	</script>
 </html>
